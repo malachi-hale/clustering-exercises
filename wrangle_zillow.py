@@ -5,6 +5,7 @@ warnings.filterwarnings("ignore")
 #Libraries for processing data
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 #Import libraries for graphing
 import matplotlib.pyplot as plt
@@ -74,23 +75,40 @@ def get_zillow_data():
     df = pd.read_sql(sql, get_connection('zillow'))
     return df
 
+
 def only_single_unit(df):
     df = df[df.propertylandusetypeid.isin([261.0, 266.0, 263.0, 269.0, 275.0, 264.0])]
-    df = df[df.unitcnt == 1.0]
     return df
 
-def handle_missing_values(df, prop_required_column = .5, prop_required_row = .75):
+def handle_missing_values(df, prop_required_column = .5, prop_required_row = .7):
     threshold = int(round(prop_required_column*len(df.index),0))
     df.dropna(axis=1, thresh=threshold, inplace=True)
     threshold = int(round(prop_required_row*len(df.columns),0))
     df.dropna(axis=0, thresh=threshold, inplace=True)
     return df
 
+
 def wrangle_zillow():
-     df = get_zillow_data()
+    df = get_zillow_data()
+    
+    df = only_single_unit(df)
 
-     df = only_single_unit(df)
-
-     df = handle_missing_values(df, prop_required_column = .5, prop_required_row = .75)
+    df = handle_missing_values(df, prop_required_column = .5, prop_required_row = .75)
 
     return df
+
+def split_data(df):
+    '''
+    take in a DataFrame and return train, validate, and test DataFrames.
+    return train, validate, test DataFrames.
+    '''
+    
+    # splits df into train_validate and test using train_test_split() stratifying on churn to get an even mix of each churn, yes or no
+    train_validate, test = train_test_split(df, test_size=.2, random_state=123)
+    
+    # splits train_validate into train and validate using train_test_split() stratifying on churn to get an even mix of each churn
+    train, validate = train_test_split(train_validate, 
+                                       test_size=.3, 
+                                       random_state=123)
+    return train, validate, test
+
